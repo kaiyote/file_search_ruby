@@ -1,8 +1,8 @@
-require 'fileutils'
+require 'yaml'
 
 class Configuration
-	@@_directory = '~\\AppData\\Roaming\\PhraseFinder\\'
-	@@_filename = @@_directory + 'settings.dat'
+	@@_directory = File.expand_path '~\\AppData\\Roaming\\PhraseFinder_Ruby\\'
+	@@_filename = File.join @@_directory, 'settings.dat'
 
 	attr_accessor :rootDirectory
 	attr_accessor :editorPath
@@ -13,16 +13,18 @@ class Configuration
 		unless File.directory?(@@_directory)
 			FileUtils.mkdir_p(@@_directory)
 		end
-		File.open(@@_directory + @@_filename, 'w') do |file|
-			file.print Marshal.dump(self)
+		File.open(@@_filename, 'wb') do |file|
+			file << YAML.dump(self)
 		end
 	end
   
 	def self.Load
-		if File.exists?(@@_directory + @@_filename)
-			File.open(@@_directory + @@_filename, 'r') do |file|
-				Marshal.load(file)
+		if File.exists?(@@_filename)
+			File.open(@@_filename, 'rb') do |file|
+				YAML.load(file.read)
 			end
+		else
+			self.new
 		end
 	end
 end

@@ -1,11 +1,13 @@
 require 'tk'
 require 'tkextlib/tile'
 require_relative 'FrameUtil'
+require_relative 'Configuration'
 include Tk::Tile
 include FrameUtil
 
 class PFFrame
 	def initialize
+		@conf = Configuration.Load
 		TkOption.add '*tearOff', 0
 		
 		rootProc = Proc.new {self.SetRoot}
@@ -55,6 +57,7 @@ class PFFrame
 		CheckButton.new(content) {text 'Search File Names'; variable $searchFileName; onvalue true; offvalue false}.grid(:column => 0, :row => 1, :sticky => 'ew', :columnspan => 2)
 		CheckButton.new(content) {text 'Use Regular Expressions'; variable $useRegex; onvalue true; offvalue false}.grid(:column => 2, :row => 1, :sticky => 'ew', :columnspan => 2)
 		@fileTree = Treeview.new(content) {height 20; show 'tree'}.grid(:column => 0, :row => 2, :columnspan => 4, :sticky => 'ew', :pady => 2, :rowspan => 6, :padx => 2)
+		
 		@resultBox = Treeview.new(content) {height 21; columns 'count'}.grid(:column => 4, :row => 1, :columnspan => 7, :sticky => 'ew', :rowspan => 8, :pady => 2, :padx => 2)
 		@resultBox.heading_configure('#0', :text => 'Filename')
 		@resultBox.column_configure('#0', :width => 350, :anchor => 'w')
@@ -78,11 +81,19 @@ class PFFrame
 	end
 	
 	def SetRoot
-		
+		dirname = Tk.chooseDirectory(:initialdir => 'C:\\', :mustexist => true, :parent => @root, :title => 'Choose root for search')
+		unless dirname == ""
+			@conf.rootDirectory = dirname
+			@conf.Save
+		end
 	end
 	
 	def SetEditor
-		
+		filename = Tk.getOpenFile(:initialdir => 'C:\\', :multiple => false, :parent => @root, :title => 'Select prefered text editor')
+		unless filename == ""
+			@conf.editorPath = filename
+			@conf.Save
+		end
 	end
 	
 	def Reload
