@@ -1,5 +1,6 @@
 require 'tk'
 require 'tkextlib/tile'
+#require 'pry'
 require_relative 'FrameUtil'
 require_relative 'Configuration'
 include Tk::Tile
@@ -7,7 +8,7 @@ include FrameUtil
 
 class PFFrame
 	def initialize
-		@conf = Configuration.Load
+		@@conf = Configuration.Load
 		TkOption.add '*tearOff', 0
 		
 		rootProc = Proc.new {self.SetRoot}
@@ -44,8 +45,8 @@ class PFFrame
 		$searchText = TkVariable.new
 		$searchFileName = TkVariable.new
 		$useRegex = TkVariable.new
-		$exclusionList = TkVariable.new
-		$extensionList = TkVariable.new
+		$exclusionList = TkVariable.new(@@conf.excludedFolders.join ', ')
+		$extensionList = TkVariable.new(@@conf.extensions.join ', ')
 		
 		Label.new(content) {text 'Search Term:'; anchor 'center'; font displayFont}.grid(:column => 0, :row => 0, :sticky => 'ew')
 		Entry.new(content) {textvariable $searchText; width 34}.grid(:column => 1, :row => 0, :sticky => 'ew', :padx => 5, :columnspan => 3)
@@ -56,9 +57,9 @@ class PFFrame
 		
 		CheckButton.new(content) {text 'Search File Names'; variable $searchFileName; onvalue true; offvalue false}.grid(:column => 0, :row => 1, :sticky => 'ew', :columnspan => 2)
 		CheckButton.new(content) {text 'Use Regular Expressions'; variable $useRegex; onvalue true; offvalue false}.grid(:column => 2, :row => 1, :sticky => 'ew', :columnspan => 2)
-		@fileTree = Treeview.new(content) {height 20; show 'tree'}.grid(:column => 0, :row => 2, :columnspan => 4, :sticky => 'ew', :pady => 2, :rowspan => 6, :padx => 2)
+		@fileTree = Treeview.new(content) {height 20; show 'tree'; selectmode 'none'}.grid(:column => 0, :row => 2, :columnspan => 4, :sticky => 'ew', :pady => 2, :rowspan => 6, :padx => 2)
 		
-		@resultBox = Treeview.new(content) {height 21; columns 'count'}.grid(:column => 4, :row => 1, :columnspan => 7, :sticky => 'ew', :rowspan => 8, :pady => 2, :padx => 2)
+		@resultBox = Treeview.new(content) {height 21; columns 'count'; selectmode 'browse'}.grid(:column => 4, :row => 1, :columnspan => 7, :sticky => 'ew', :rowspan => 8, :pady => 2, :padx => 2)
 		@resultBox.heading_configure('#0', :text => 'Filename')
 		@resultBox.column_configure('#0', :width => 350, :anchor => 'w')
 		@resultBox.heading_configure('count', :text => 'Occurences')
@@ -70,11 +71,13 @@ class PFFrame
 		Entry.new(content) {textvariable $extensionList; width 34}.grid(:column => 1, :row => 9, :sticky => 'ew', :padx => 5, :columnspan => 3, :pady => 2)
 		Label.new(content) {text 'Instance Lines'; anchor 'center'; font displayFont;}.grid(:column => 4, :row => 9, :sticky => 'ew', :pady => 2, :columnspan => 7)
 		
-		@contentBox = Treeview.new(content) {height 5; columns 'count'}.grid(:column => 0, :row => 10, :columnspan => 11, :sticky => 'ew', :pady => 2)
+		@contentBox = Treeview.new(content) {height 5; columns 'count'; selectmode 'none'}.grid(:column => 0, :row => 10, :columnspan => 11, :sticky => 'ew', :pady => 2)
 		@contentBox.heading_configure('#0', :text => 'Content')
 		@contentBox.column_configure('#0', :width => 700, :anchor => 'w')
 		@contentBox.heading_configure('count', :text => 'Line No.')
 		@contentBox.column_configure('count', :width => 1, :anchor => 'center')
+		
+		self.mockData
 		
 		@root.resizable(false, false)
 		CenterWindow(@root, 885, 655)
@@ -83,16 +86,16 @@ class PFFrame
 	def SetRoot
 		dirname = Tk.chooseDirectory(:initialdir => 'C:\\', :mustexist => true, :parent => @root, :title => 'Choose root for search')
 		unless dirname == ""
-			@conf.rootDirectory = dirname
-			@conf.Save
+			@@conf.rootDirectory = dirname
+			@@conf.Save
 		end
 	end
 	
 	def SetEditor
 		filename = Tk.getOpenFile(:initialdir => 'C:\\', :multiple => false, :parent => @root, :title => 'Select prefered text editor')
 		unless filename == ""
-			@conf.editorPath = filename
-			@conf.Save
+			@@conf.editorPath = filename
+			@@conf.Save
 		end
 	end
 	
@@ -113,6 +116,54 @@ class PFFrame
 	end
 	
 	def Clear
-	
+		@contentBox.delete @contentBox.root.children
+		@resultBox.delete @resultBox.root.children
 	end
+	
+	def mockData
+		@fileTree.insert('', 'end', :text => 'C:', :id => 'root', :tags => ['check'])
+		@fileTree.insert('root', 'end', :text => 'Program Files', :tags => ['check'])
+		@fileTree.insert('root', 'end', :text => 'Program Files x86', :id => 'child1', :tags => ['check'])
+		@fileTree.insert('child1', 'end', :text => 'Notepad++', :tags => ['check'])
+		@fileTree.insert('child1', 'end', :text => 'Google Chrome', :tags => ['check'])
+		
+		@fileTree.tag_bind('check', '1', proc{|event| self.testClick event})
+		
+		@resultBox.insert('', 'end', :text => 'C:\gibberish.txt', :values => ['15'])
+		@resultBox.insert('', 'end', :text => 'C:\Program Files\not_here.aspx', :values => ['2'])
+		@resultBox.insert('', 'end', :text => 'C:\Program Files x86\also_not_here.cs', :values => ['1002'])
+		@resultBox.insert('', 'end', :text => 'C:\Program Files x86\Notepad++\npp.exe', :values => ['1'])
+		@resultBox.insert('', 'end', :text => 'C:\Program Files x86\Google Chrome\random_file.dat', :values => ['6'])
+		
+		@contentBox.insert('', 'end', :text => '		hi there! this is just some rand', :values => ['3'])
+		@contentBox.insert('', 'end', :text => 'om text that i am typing here to show ho', :values => ['1'])
+		@contentBox.insert('', 'end', :text => 'the ui will look/behave when you try to ', :values => ['2'])
+		@contentBox.insert('', 'end', :text => 'interact with it during the normal usage', :values => ['3'])
+		@contentBox.insert('', 'end', :text => 'of this piece of software.', :values => ['2'])
+		@contentBox.insert('', 'end', :text => 'more random text go! lololololololololol', :values => ['3'])
+	end
+	
+	def testClick event
+		item = event.widget.identify(event.x, event.y)
+		depth = 1
+		
+		while (item.parent_item.text.to_s != "")
+			item = item.parent_item
+			depth = depth + 1
+		end
+		
+		if (event.x > 20 * depth)
+			self.SetRoot
+		end
+	end
+	
+	def self.__storeConf
+		@@conf.excludedFolders = $exclusionList.value.split(',').map(&:strip)
+		@@conf.extensions = $extensionList.value.split(',').map(&:strip)
+		@@conf.Save
+	end
+	
+	at_exit {
+		PFFrame.__storeConf
+	}
 end
