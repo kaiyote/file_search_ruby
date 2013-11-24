@@ -24,7 +24,12 @@ class Configuration
 				YAML.load(file.read)
 			end
 		else
-			self.new
+			conf = self.new
+			conf.rootDirectory = "C:\\"
+			conf.editorPath = ""
+			conf.excludedFolders = []
+			conf.extensions = []
+			conf
 		end
 	end
 end
