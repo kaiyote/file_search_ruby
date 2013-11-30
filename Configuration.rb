@@ -1,4 +1,5 @@
 require 'yaml'
+require 'fileutils'
 
 class Configuration
 	@@_directory = File.expand_path '~\\AppData\\Roaming\\PhraseFinder_Ruby\\'

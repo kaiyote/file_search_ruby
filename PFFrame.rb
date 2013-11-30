@@ -121,6 +121,24 @@ class PFFrame
 	end
 	
 	def mockData
+		@searchData = Hash.new
+		@searchData['C:\gibberish.txt'] = ['		hi there! this is just some rand',
+										   'om text that i am typing here to show ho',
+										   'w the ui will look/behave when you try t',
+										   'o interact with it during the normal usa',
+										   'ge of this piece of software          :)',
+										   'more random text go! lololololololololol']
+		@searchData['C:\Program Files\not_here.aspx'] = ['some aspx stuff',
+														 'more aspx stuff']
+		@searchData['C:\Program Files x86\also_not_here.cs'] = ['cs stuff',
+																'even more cs stuff']
+		@searchData['C:\Program Files x86\Notepad++\npp.exe'] = ['random binary string',
+																 'not even sure why this would show up',
+																 'in the search results']
+		@searchData['C:\Program Files x86\Google Chrome\random_file.dat'] = ['more random binary crap',
+																			 'not even sure why this would',
+																			 'show up in the search']
+	
 		@fileTree.insert('', 'end', :text => 'C:', :id => 'root', :tags => ['check'])
 		@fileTree.insert('root', 'end', :text => 'Program Files', :tags => ['check'])
 		@fileTree.insert('root', 'end', :text => 'Program Files x86', :id => 'child1', :tags => ['check'])
@@ -129,18 +147,11 @@ class PFFrame
 		
 		@fileTree.tag_bind('check', '1', proc{|event| self.testClick event})
 		
-		@resultBox.insert('', 'end', :text => 'C:\gibberish.txt', :values => ['15'])
-		@resultBox.insert('', 'end', :text => 'C:\Program Files\not_here.aspx', :values => ['2'])
-		@resultBox.insert('', 'end', :text => 'C:\Program Files x86\also_not_here.cs', :values => ['1002'])
-		@resultBox.insert('', 'end', :text => 'C:\Program Files x86\Notepad++\npp.exe', :values => ['1'])
-		@resultBox.insert('', 'end', :text => 'C:\Program Files x86\Google Chrome\random_file.dat', :values => ['6'])
+		@searchData.keys.each do |key|
+			@resultBox.insert('', 'end', :text => key, :values => [@searchData[key].length], :tags => ['item'])
+		end
 		
-		@contentBox.insert('', 'end', :text => '		hi there! this is just some rand', :values => ['3'])
-		@contentBox.insert('', 'end', :text => 'om text that i am typing here to show ho', :values => ['1'])
-		@contentBox.insert('', 'end', :text => 'the ui will look/behave when you try to ', :values => ['2'])
-		@contentBox.insert('', 'end', :text => 'interact with it during the normal usage', :values => ['3'])
-		@contentBox.insert('', 'end', :text => 'of this piece of software.', :values => ['2'])
-		@contentBox.insert('', 'end', :text => 'more random text go! lololololololololol', :values => ['3'])
+		@resultBox.tag_bind('item', '1', proc{|event| self.resultClicked event})
 	end
 	
 	def testClick event
@@ -154,6 +165,17 @@ class PFFrame
 		
 		if (event.x > 20 * depth)
 			self.SetRoot
+		end
+	end
+	
+	def resultClicked event
+		item = event.widget.identify(event.x, event.y)
+		content = @searchData[item.text.to_s]
+		
+		@contentBox.delete @contentBox.root.children
+		
+		content.each_index do |i|
+			@contentBox.insert('', 'end', :text => content[i], :values => [i])
 		end
 	end
 	
