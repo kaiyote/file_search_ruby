@@ -21,7 +21,7 @@ class PFFrame
 		
 		displayFont = TkFont.new("family" => "Segoe UI", "weight" => "bold", "size" => "9")
   
-		@root = TkRoot.new {title 'Phrase Finder'}
+		@root = TkRoot.new {title 'File Search'}
 		content = Frame.new(@root) {padding '10 5'}.grid
 		
 		menubar = TkMenu.new(@root)

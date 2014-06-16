@@ -2,7 +2,7 @@ require 'yaml'
 require 'fileutils'
 
 class Configuration
-	@@_directory = File.expand_path '~\\AppData\\Roaming\\PhraseFinder_Ruby\\'
+	@@_directory = File.expand_path '~\\AppData\\Roaming\\file_search_ruby\\'
 	@@_filename = File.join @@_directory, 'settings.dat'
 
 	attr_accessor :rootDirectory

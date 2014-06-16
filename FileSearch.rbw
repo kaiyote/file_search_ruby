@@ -1,9 +1,9 @@
 require 'tk'
-require_relative 'PFFrame'
+require_relative 'FSFrame'
 
 #flip to false or delete when ready for release
 $debug = true
 
-PFFrame.new
+FSFrame.new
 
 Tk.mainloop
